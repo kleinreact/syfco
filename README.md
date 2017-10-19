@@ -1,4 +1,4 @@
-# Synthesis Format Conversion Tool<br/>(Version 1.0.0.22)
+# Synthesis Format Conversion Tool<br/>(Version 1.1.0.3)
 
 A tool for reading, manipulating and transforming synthesis
 specifications in [TLSF](https://arxiv.org/abs/1604.02284).
@@ -26,7 +26,7 @@ The main features of the tool are summarized as follows:
   [structured Slugs](https://github.com/VerifiableRobotics/slugs/blob/master/doc/input_formats.md#structuredslugs), and [SlugsIn](https://github.com/VerifiableRobotics/slugs/blob/master/doc/input_formats.md#slugsin).
 
 * Syntactical analysis of membership in GR(k) for any k (modulo
-  boolean identities).
+  Boolean identities).
 
 * On the fly adjustment of parameters, semantics or targets.
 
@@ -44,105 +44,107 @@ The main features of the tool are summarized as follows:
 ## Installation
 
 SyfCo is written in Haskell and can be compiled using the
-Glasgow Haskell Compiler (GHC).
+Glasgow Haskell Compiler (GHC). To install the tool you can either
+use [cabal](https://www.haskell.org/cabal) or [stack](https://docs.haskellstack.org/en/stable/README/) (recommended).
+For more information about the purpose of these tools and why you
+should prefer using stack instead of cabal, we recommend reading
+[this blog post](https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal) by Mathieu Boespflug. 
 
-Prerequisites:
+To install the tool with stack use:
 
-* [GHC](https://www.haskell.org/ghc) (recommended version: >= 7.0.1, [Haskell2010](https://wiki.haskell.org/Definition))
+`stack install`
 
-* [parsec](https://hackage.haskell.org/package/parsec) (recommended version: >= 3.1)
+Stack then automatically fetches the right compiler version
+and required dependencies. After that it builds and installs
+the package into you local stack path. If you instead prefer
+to build only, use `stack build`.
 
-* [array](https://hackage.haskell.org/package/array) (recommended version: >= 0.5)
+If you insist to use cabal instead, we recommend at least to use
+a sandbox. Initialize the sandbox and configure the project via
 
-* [containers](https://hackage.haskell.org/package/containers) (recommended version: >= 0.5)
+`cabal sandbox init && cabal configure`
 
-* [directory](https://hackage.haskell.org/package/directory) (recommended version: >= 1.2)
+Then use `cabal build` or `cabal install` to build or install the
+tool.
 
-* [mtl](https://hackage.haskell.org/package/mtl) (recommended version: >= 2.2)
+Note that (independent of the chosen build method) building the
+tool will only create the final executable in a hidden sub-folder,
+which might get cumbersome for development or testing local changes.
+Hence, for this purpose, you may prefer to use `make`. The makefile
+determines the chosen build method, rebuilds the package, and copies
+the final `syfco` executable to the root directory of the project.
 
-* [transformers](https://hackage.haskell.org/package/transformers) (recommended version: >= 0.4)
-
-To install the above dependencies, build the tool,
-and install it with [cabal](https://www.haskell.org/cabal):
-
-`cabal install`
-
-If the dependencies are already installed,
-then build (no installation) with:
-
-`make`
-
-However, if you encounter any problems,
-please inform us via [the project bug tracker](https://github.com/reactive-systems/syfco/issues).
+If you still encounter any problems, please inform us via the
+[project bug tracker](https://github.com/reactive-systems/syfco/issues).
 
 ## Usage
 
-```syfco [OPTIONS]... <file>```
+<code>syfco [OPTIONS]... <file></code>
 
 #### File Operations:
 
 |Command|Description|
 |-------|-----------|
-|```-o, --output```|path of the output file (results are printed to STDOUT if not set)|
-|```-r, --read-config```|read parameters from the given configuration file (may overwrite prior arguments)|
-|```-w, --write-config```|write the current configuration to the given path (includes later arguments)|
-|```-f, --format```|output format - possible values are:</br> <table><tbody> <tr><td>```full```</td><td>input file with applied transformations (default)</td></tr><tr><td>```basic```</td><td>high level format (without global section)</td></tr><tr><td>```utf8```</td><td>human readable output using UTF8 symbols</td></tr><tr><td>```wring```</td><td>Wring input format</td></tr><tr><td>```lily```</td><td>Lily input format</td></tr><tr><td>```acacia```</td><td>Acacia / Acacia+ input format</td></tr><tr><td>```acacia-specs```</td><td>Acacia input format with spec units</td></tr><tr><td>```ltlxba```</td><td>LTL2BA / LTL3BA input format</td></tr><tr><td>```promela```</td><td>Promela LTL</td></tr><tr><td>```unbeast```</td><td>Unbeast input format</td></tr><tr><td>```slugs```</td><td>structured Slugs format [GR(1) only]</td></tr><tr><td>```slugsin```</td><td>SlugsIn format [GR(1) only]</td></tr><tr><td>```psl```</td><td>PSL Syntax</td></tr><tr><td>```smv```</td><td>SMV file format</td></tr> </tbody></table>|
-|```-m, --mode```|output mode - possible values are:</br> <table><tbody> <tr><td>```pretty```</td><td>pretty printing (as less parentheses as possible) (default)</td></tr><tr><td>```fully```</td><td>output fully parenthesized formulas</td></tr> </tbody></table>|
-|```-pf, --part-file```|create a partitioning (```.part```) file|
-|```-bd, --bus-delimiter```|delimiter used to print indexed bus signals</br> (default: ```_```)|
-|```-ps, --prime-symbol```|symbol/string denoting primes in signals</br> (default: ```'```)|
-|```-as, --at-symbol```|symbol/string denoting @-symbols in signals</br> (default: ```@```)|
-|```-in, --stdin```|read the input file from STDIN|
+|<code>-o, --output</code>|path of the output file (results are printed to STDOUT if not set)|
+|<code>-r, --read-config</code>|read parameters from the given configuration file (may overwrite prior arguments)|
+|<code>-w, --write-config</code>|write the current configuration to the given path (includes later arguments)|
+|<code>-f, --format</code>|output format - possible values are:</br> <table><tbody> <tr><td><code>full</code></td><td>input file with applied transformations (default)</td></tr><tr><td><code>basic</code></td><td>high level format (without global section)</td></tr><tr><td><code>utf8</code></td><td>human readable output using UTF8 symbols</td></tr><tr><td><code>wring</code></td><td>Wring input format</td></tr><tr><td><code>lily</code></td><td>Lily input format</td></tr><tr><td><code>acacia</code></td><td>Acacia / Acacia+ input format</td></tr><tr><td><code>acacia-specs</code></td><td>Acacia input format with spec units</td></tr><tr><td><code>ltlxba</code></td><td>LTL2BA / LTL3BA input format</td></tr><tr><td><code>promela</code></td><td>Promela LTL</td></tr><tr><td><code>unbeast</code></td><td>Unbeast input format</td></tr><tr><td><code>slugs</code></td><td>structured Slugs format [GR(1) only]</td></tr><tr><td><code>slugsin</code></td><td>SlugsIn format [GR(1) only]</td></tr><tr><td><code>psl</code></td><td>PSL Syntax</td></tr><tr><td><code>smv</code></td><td>SMV file format</td></tr><tr><td><code>bosy</code></td><td>Bosy input format</td></tr><tr><td><code>rabinizer</code></td><td>Rabinizer input format</td></tr> </tbody></table>|
+|<code>-m, --mode</code>|output mode - possible values are:</br> <table><tbody> <tr><td><code>pretty</code></td><td>pretty printing (as less parentheses as possible) (default)</td></tr><tr><td><code>fully</code></td><td>output fully parenthesized formulas</td></tr> </tbody></table>|
+|<code>-pf, --part-file</code>|create a partitioning (<code>.part</code>) file|
+|<code>-bd, --bus-delimiter</code>|delimiter used to print indexed bus signals</br> (default: <code>_</code>)|
+|<code>-ps, --prime-symbol</code>|symbol/string denoting primes in signals</br> (default: <code>'</code>)|
+|<code>-as, --at-symbol</code>|symbol/string denoting @-symbols in signals</br> (default: <code>@</code>)|
+|<code>-in, --stdin</code>|read the input file from STDIN|
 
 #### File Modifications:
 
 |Command|Description|
 |-------|-----------|
-|```-os, --overwrite-semantics```|overwrite the semantics of the file|
-|```-ot, --overwrite-target```|overwrite the target of the file|
-|```-op, --overwrite-parameter```|overwrite a parameter of the file|
+|<code>-os, --overwrite-semantics</code>|overwrite the semantics of the file|
+|<code>-ot, --overwrite-target</code>|overwrite the target of the file|
+|<code>-op, --overwrite-parameter</code>|overwrite a parameter of the file|
 
 #### Formula Transformations (disabled by default):
 
 |Command|Description|
 |-------|-----------|
-|```-s0, --weak-simplify```|simple simplifications (removal of true/false in boolean connectives, redundant temporal operators, etc.)|
-|```-s1, --strong-simplify```|advanced simplifications</br> (includes: ```-s0 -nnf -nw -nr -pgo -pfo -pxo```)|
-|```-nnf, --negation-normal-form```|convert the resulting LTL formula into negation normal form|
-|```-pgi, --push-globally-inwards```|push global operators inwards</br>   ```G (a && b) => (G a) && (G b)```|
-|```-pfi, --push-finally-inwards```|push finally operators inwards</br>   ```F (a || b) => (F a) || (F b)```|
-|```-pxi, --push-next-inwards```|push next operators inwards</br>   ```X (a && b) => (X a) && (X b)```</br>   ```X (a || b) => (X a) || (X b)```|
-|```-pgo, --pull-globally-outwards```|pull global operators outwards</br>   ```(G a) && (G b) => G (a && b)```|
-|```-pfo, --pull-finally-outwards```|pull finally operators outwards</br>   ```(F a) || (F b) => F (a || b)```|
-|```-pxo, --pull-next-outwards```|pull next operators outwards</br>   ```(X a) && (X b) => X (a && b)```</br>   ```(X a) || (X b) => X (a || b)```|
-|```-nw, --no-weak-until```|replace weak until operators</br>   ```a W b => (a U b) || (G a)```|
-|```-nr, --no-release```|replace release operators</br>   ```a R b => b W (a && b)```|
-|```-nf, --no-finally```|replace finally operators</br>   ```F a => true U a```|
-|```-ng, --no-globally```|replace global operators</br>   ```G a => false R a```|
-|```-nd, --no-derived```|same as: ```-nw -nf -ng```|
+|<code>-s0, --weak-simplify</code>|simple simplifications (removal of true/false in boolean connectives, redundant temporal operators, etc.)|
+|<code>-s1, --strong-simplify</code>|advanced simplifications</br> (includes: <code>-s0 -nnf -nw -nr -pgo -pfo -pxo</code>)|
+|<code>-nnf, --negation-normal-form</code>|convert the resulting LTL formula into negation normal form|
+|<code>-pgi, --push-globally-inwards</code>|push global operators inwards</br>   <code>G (a && b) => (G a) && (G b)</code>|
+|<code>-pfi, --push-finally-inwards</code>|push finally operators inwards</br>   <code>F (a &#124;&#124; b) => (F a) &#124;&#124; (F b)</code>|
+|<code>-pxi, --push-next-inwards</code>|push next operators inwards</br>   <code>X (a && b) => (X a) && (X b)</code></br>   <code>X (a &#124;&#124; b) => (X a) &#124;&#124; (X b)</code>|
+|<code>-pgo, --pull-globally-outwards</code>|pull global operators outwards</br>   <code>(G a) && (G b) => G (a && b)</code>|
+|<code>-pfo, --pull-finally-outwards</code>|pull finally operators outwards</br>   <code>(F a) &#124;&#124; (F b) => F (a &#124;&#124; b)</code>|
+|<code>-pxo, --pull-next-outwards</code>|pull next operators outwards</br>   <code>(X a) && (X b) => X (a && b)</code></br>   <code>(X a) &#124;&#124; (X b) => X (a &#124;&#124; b)</code>|
+|<code>-nw, --no-weak-until</code>|replace weak until operators</br>   <code>a W b => (a U b) &#124;&#124; (G a)</code>|
+|<code>-nr, --no-release</code>|replace release operators</br>   <code>a R b => b W (a && b)</code>|
+|<code>-nf, --no-finally</code>|replace finally operators</br>   <code>F a => true U a</code>|
+|<code>-ng, --no-globally</code>|replace global operators</br>   <code>G a => false R a</code>|
+|<code>-nd, --no-derived</code>|same as: <code>-nw -nf -ng</code>|
 
 #### Check Specification Type (and exit):
 
 |Command|Description|
 |-------|-----------|
-|```-gr, --generalized-reactivity```|check whether the input is in the Generalized Reactivity fragment|
+|<code>-gr, --generalized-reactivity</code>|check whether the input is in the Generalized Reactivity fragment|
 
 #### Extract Information (and exit):
 
 |Command|Description|
 |-------|-----------|
-|```-c, --check```|check that input conforms to TLSF|
-|```-t, --print-title```|output the title of the input file|
-|```-d, --print-description```|output the description of the input file|
-|```-s, --print-semantics```|output the semantics of the input file|
-|```-g, --print-target```|output the target of the input file|
-|```-a, --print-tags```|output the target of the input file|
-|```-p, --print-parameters```|output the parameters of the input file|
-|```-i, --print-info```|output all data of the info section|
-|```-ins, --print-input-signals```|output the input signals of the specification|
-|```-outs, --print-output-signals```|output the output signals of the specification|
-|```-v, --version```|output version information|
-|```-h, --help```|display this help|
+|<code>-c, --check</code>|check that input conforms to TLSF|
+|<code>-t, --print-title</code>|output the title of the input file|
+|<code>-d, --print-description</code>|output the description of the input file|
+|<code>-s, --print-semantics</code>|output the semantics of the input file|
+|<code>-g, --print-target</code>|output the target of the input file|
+|<code>-a, --print-tags</code>|output the target of the input file|
+|<code>-p, --print-parameters</code>|output the parameters of the input file|
+|<code>-i, --print-info</code>|output all data of the info section|
+|<code>-ins, --print-input-signals</code>|output the input signals of the specification|
+|<code>-outs, --print-output-signals</code>|output the output signals of the specification|
+|<code>-v, --version</code>|output version information|
+|<code>-h, --help</code>|display this help|
 
 #### Sample Usage:
 
@@ -157,15 +159,25 @@ syfco -t file.tlsf
 ## Examples
 
 A number of synthesis benchmarks in TLSF can be found in the
-```/examples``` directory.
+<code>/examples</code> directory.
+
+## Syfco Library
+
+Syfco is also provided as a Haskell library. In fact, the syfco
+executable is nothing different than a fancy command line interface
+to this library. If you are interested in using the interface, we
+recommend to build and check the interface documentation, which is
+generated by:
+
+`make haddock`
 
 ## Editor Support
 
-If you use [Emacs](https://www.gnu.org/software/emacs), you should try our emacs mode (```tlsf-mode.el```),
-which can be found in the ```/misc``` directory.
+If you use [Emacs](https://www.gnu.org/software/emacs), you should try our emacs mode (<code>tlsf-mode.el</code>),
+which can be found in the <code>/misc</code> directory.
 
 ## Adding output formats
 
 If you like to add a new output format, first consider
-```/Writer/Formats/Example.hs```, which contains the most common
+<code>/Writer/Formats/Example.hs</code>, which contains the most common
 standard constructs and a short tutorial.

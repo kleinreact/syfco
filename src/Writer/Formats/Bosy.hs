@@ -72,16 +72,14 @@ writeFormat config specification = do
   assertions' <- mapM ((simplify (adjust config' opConfig)) . fGlobally) assertions
   guarantees' <- mapM (simplify (adjust config' opConfig)) guarantees
 
-  (inputs, outputs) <- evalSignals config' specification
+  (inputs, outputs) <- signals config' specification
 
   return $
     "{" ++
     "\"semantics\": " ++
-      (case semantics specification of
-         SemanticsMealy       -> "\"mealy\""
-         SemanticsMoore       -> "\"moore\""
-         SemanticsStrictMealy -> "\"mealy\""
-         SemanticsStrictMoore -> "\"moore\"") ++ ", " ++
+      (case owSemantics config of
+         Nothing       -> printSemantics (semantics specification)
+         Just x        -> printSemantics x) ++ ", " ++
     "\"inputs\": [" ++ (intercalate ", " (map printSignal inputs)) ++ "], " ++
     "\"outputs\": [" ++ (intercalate ", " (map printSignal outputs)) ++ "], " ++
     "\"assumptions\": [" ++ (intercalate ", " (map printFormula' (requirments' ++ assumptions'))) ++ "], " ++
@@ -89,6 +87,12 @@ writeFormat config specification = do
     "}\n"
 
   where
+    printSemantics specSemantics = 
+      case specSemantics of
+        SemanticsMealy       -> "\"mealy\""
+        SemanticsMoore       -> "\"moore\""
+        SemanticsStrictMealy -> "\"mealy\""
+        SemanticsStrictMoore -> "\"moore\""
 
     printFormula' f =
       "\"" ++ (printFormula opConfig Fully) f ++ "\""

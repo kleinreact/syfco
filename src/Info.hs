@@ -8,6 +8,17 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+  , MultiParamTypeClasses
+  , TypeSynonymInstances
+  , FlexibleContexts
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Info
   ( prTitle
   , prDescription
@@ -31,6 +42,8 @@ import Syfco
   ( Configuration(..)
   , Semantics(..)
   , Target(..)
+  , WriteFormat(..)
+  , WriteMode(..)
   , Specification
   , defaultCfg
   , title
@@ -42,6 +55,11 @@ import Syfco
   , inputs
   , outputs
   , version
+  )
+
+import Data.Convertible
+  ( Convertible
+  , convert
   )
 
 import Data.Array
@@ -144,8 +162,6 @@ prInputs c s = case inputs c s of
   Left err     -> prError $ show err
   Right (x:xr) -> putStrLn $ x ++ concatMap ((:) ',' . (:) ' ') xr
   _            -> return ()
-
-
 
 -----------------------------------------------------------------------------
 
@@ -469,38 +485,44 @@ usage m =
          [ "display this help" ]) ]
 
     formats =
-      [ ("full", True,
+      [ (convert FULL, True,
          ["input file with applied transformations"])
-      , ("basic", False,
+      , (convert BASIC, False,
          ["high level format (without global section)"])
-      , ("utf8", False,
+      , (convert UTF8, False,
          ["human readable output using UTF8 symbols"])
-      , ("wring", False,
+      , (convert WRING, False,
          ["Wring input format"])
-      , ("lily", False,
+      , (convert LILY, False,
          ["Lily input format"])
-      , ("acacia", False,
+      , (convert ACACIA, False,
          ["Acacia / Acacia+ input format"])
-      , ("acacia-specs", False, ["Acacia input format with spec units"])
-      , ("ltlxba", False,
+      , (convert ACACIASPECS, False,
+         ["Acacia input format with spec units"])
+      , (convert LTLXBA, False,
          ["LTL2BA / LTL3BA input format"])
-      , ("promela", False,
+      , (convert PROMELA, False,
          ["Promela LTL"])
-      , ("unbeast", False,
+      , (convert UNBEAST, False,
          ["Unbeast input format"])
-      , ("slugs", False,
+      , (convert SLUGS, False,
          ["structured Slugs format [GR(1) only]"])
-      , ("slugsin", False,
+      , (convert SLUGSIN, False,
          ["SlugsIn format [GR(1) only]"])
-      , ("psl", False,
+      , (convert PSL, False,
          ["PSL Syntax"])
-      , ("smv", False,
-         ["SMV file format"]) ]
+      , (convert SMV, False,
+         ["SMV file format"])
+      , (convert BOSY, False,
+         ["Bosy input format"])
+      , (convert RABINIZER, False,
+         ["Rabinizer input format"])
+      ]
 
     modes =
-      [ ("pretty", True,
+      [ (convert Pretty, True,
          ["pretty printing (as less parentheses as possible)"])
-      , ("fully", False,
+      , (convert Fully, False,
          ["output fully parenthesized formulas"]) ]
 
 -----------------------------------------------------------------------------
@@ -557,7 +579,7 @@ readme m = appendlinks $ unlines
      "doc/input_formats.md#slugsin") ++ "."
   , ""
   , "* Syntactical analysis of membership in GR(k) for any k (modulo"
-  , "  boolean identities)."
+  , "  Boolean identities)."
   , ""
   , "* On the fly adjustment of parameters, semantics or targets."
   , ""
@@ -575,61 +597,62 @@ readme m = appendlinks $ unlines
   , "## Installation"
   , ""
   , "SyfCo is written in Haskell and can be compiled using the"
-  , "Glasgow Haskell Compiler (GHC)."
+  , "Glasgow Haskell Compiler (GHC). To install the tool you can either"
+  , "use " ++ link "cabal" "https://www.haskell.org/cabal" ++ " or " ++
+    link "stack" "https://docs.haskellstack.org/en/stable/README/" ++
+    " (recommended)."
+  , "For more information about the purpose of these tools and why you"
+  , "should prefer using stack instead of cabal, we recommend reading"
+  ,  link "this blog post"
+       "https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal" ++
+    " by Mathieu Boespflug. "
   , ""
-  , "Prerequisites:"
+  , "To install the tool with stack use:"
   , ""
-  , "* " ++ link "GHC" "https://www.haskell.org/ghc" ++
-    " (recommended version: >= 7.0.1, " ++
-    link "Haskell2010" "https://wiki.haskell.org/Definition" ++ ")"
+  , scb "stack install"
   , ""
-  , "* " ++
-    link "parsec" "https://hackage.haskell.org/package/parsec"
-    ++ " (recommended version: >= 3.1)"
+  , "Stack then automatically fetches the right compiler version"
+  , "and required dependencies. After that it builds and installs"
+  , "the package into you local stack path. If you instead prefer"
+  , "to build only, use `stack build`."
   , ""
-  , "* " ++
-    link "array" "https://hackage.haskell.org/package/array"
-    ++ " (recommended version: >= 0.5)"
+  , "If you insist to use cabal instead, we recommend at least to use"
+  , "a sandbox. Initialize the sandbox and configure the project via"
   , ""
-  , "* " ++
-    link "containers" "https://hackage.haskell.org/package/containers"
-    ++ " (recommended version: >= 0.5)"
+  , scb "cabal sandbox init && cabal configure"
   , ""
-  , "* " ++
-    link "directory" "https://hackage.haskell.org/package/directory"
-    ++ " (recommended version: >= 1.2)"
+  , "Then use `cabal build` or `cabal install` to build or install the"
+  , "tool."
   , ""
-  , "* " ++
-    link "mtl" "https://hackage.haskell.org/package/mtl"
-    ++ " (recommended version: >= 2.2)"
+  , "Note that (independent of the chosen build method) building the"
+  , "tool will only create the final executable in a hidden sub-folder,"
+  , "which might get cumbersome for development or testing local changes."
+  , "Hence, for this purpose, you may prefer to use `make`. The makefile"
+  , "determines the chosen build method, rebuilds the package, and copies"
+  , "the final `syfco` executable to the root directory of the project."
   , ""
-  , "* " ++
-    link "transformers" "https://hackage.haskell.org/package/transformers"
-    ++ " (recommended version: >= 0.4)"
-  , ""
-  , "To install the above dependencies, build the tool,"
-  , "and install it with " ++
-    link "cabal" "https://www.haskell.org/cabal" ++ ":"
-  , ""
-  , scb "cabal install"
-  , ""
-  , "If the dependencies are already installed,"
-  , "then build (no installation) with:"
-  , ""
-  , scb "make"
-  , ""
-  , "However, if you encounter any problems,"
-  , "please inform us via " ++
-    switch ("the project bug tracker:\n\n  " ++
-            "https://github.com/reactive-systems/syfco/issues\n\n")
-           (link "the project bug tracker"
-                 "https://github.com/reactive-systems/syfco/issues"
-                 ++ ".\n")
+  , "If you still encounter any problems, please inform us via the"
+  , switch
+      ("project bug tracker:\n\n  " ++
+       "https://github.com/reactive-systems/syfco/issues\n\n")
+      (link "project bug tracker"
+            "https://github.com/reactive-systems/syfco/issues"
+            ++ ".\n")
   , usage m
   , "## Examples"
   , ""
   , "A number of synthesis benchmarks in TLSF can be found in the"
   , code m "/examples" ++ " directory."
+  , ""
+  , "## Syfco Library"
+  , ""
+  , "Syfco is also provided as a Haskell library. In fact, the syfco"
+  , "executable is nothing different than a fancy command line interface"
+  , "to this library. If you are interested in using the interface, we"
+  , "recommend to build and check the interface documentation, which is"
+  , "generated by:"
+  , ""
+  , scb "make haddock"
   , ""
   , "## Editor Support"
   , ""
@@ -689,8 +712,12 @@ code
   :: Mode -> String -> String
 
 code m str = case m of
-  Markdown -> "```" ++ str ++ "```"
+  Markdown -> "<code>" ++ concatMap escapePipe str ++ "</code>"
   _        -> str
+
+  where
+    escapePipe '|' = "&#124;"
+    escapePipe x   = [x]
 
 -----------------------------------------------------------------------------
 
