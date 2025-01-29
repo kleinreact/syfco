@@ -23,6 +23,8 @@ import Data.Specification
 import Data.List
 import Data.Array as A
 
+import qualified Data.List.NonEmpty as NonEmpty (head)
+
 -----------------------------------------------------------------------------
 
 -- | Replaces a list of positions in a given string.
@@ -86,6 +88,6 @@ writeFormat c s = do
       let f x = str == idName (symboltable s ! bIdent x)
       in case filter f $ parameters s of
         []  -> Nothing
-        x:_ -> return $ srcPos $ head $ bVal x
+        x:_ -> return $ srcPos $ NonEmpty.head $ bVal x
 
 -----------------------------------------------------------------------------

@@ -26,6 +26,10 @@ import Data.Binding
   ( BindExpr(..)
   )
 
+import Control.Exception
+  ( assert
+  )
+
 import Data.Expression
   ( Expr(..)
   , Expr'(..)
@@ -50,12 +54,15 @@ import Data.Maybe
   ( mapMaybe
   )
 
+import Control.Monad
+  ( void
+  )
+
 import Control.Monad.State
   ( StateT(..)
   , evalStateT
   , get
   , put
-  , void
   )
 
 import qualified Reader.Parser.Data as PD
@@ -277,9 +284,9 @@ add (i,pos) = do
         , tArgs = IM.insert (count a) [] $ tArgs a
         }
       return (count a,pos)
-    Just j ->
-      let Just p = IM.lookup j $ tPos a
-      in errConflict i p pos
+    Just j -> case IM.lookup j $ tPos a of
+      Just p -> errConflict i p pos
+      _ -> assert False undefined
 
 -----------------------------------------------------------------------------
 

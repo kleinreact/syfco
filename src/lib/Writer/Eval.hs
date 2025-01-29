@@ -54,6 +54,14 @@ import Data.List
   ( find
   )
 
+import Data.List.NonEmpty
+  ( NonEmpty(..)
+  )
+
+import qualified Data.List.NonEmpty as NonEmpty
+  ( head
+  )
+
 import Data.Char
   ( toLower
   )
@@ -109,14 +117,17 @@ import Writer.Formats
   ( needsLower
   )
 
-import Control.Monad.State
-  ( StateT(..)
-  , foldM
-  , execStateT
-  , evalStateT
+import Control.Monad
+  ( foldM
   , liftM2
   , liftM
   , when
+  )
+
+import Control.Monad.State
+  ( StateT(..)
+  , execStateT
+  , evalStateT
   , get
   , put
   )
@@ -420,8 +431,11 @@ initialize c s = do
       filter single $ inputs s'' ++ outputs s''
 
     -- get the ids from the signals
-    ioids =
-      map (\(SDSingle (x,_)) -> x) ios
+    ioids = catMaybes $ map
+      (\x -> case x of
+          SDSingle (y, _) -> Just y
+          _               -> Nothing
+      ) $ inputs s'' ++ outputs s''
 
     ids = ioids ++ uids
 
@@ -758,10 +772,14 @@ evalLtl s e = case expr e of
         _      -> assert False undefined
       _      -> assert False undefined
   BlnRAnd xs x         ->
-    let f = VLtl . And . map (\(VLtl v) -> v)
+    let f = VLtl . And . map g
+        g (VLtl v) = v
+        g _ = assert False undefined
     in evalCond evalF f xs x
   BlnROr xs x          ->
-    let f = VLtl . Or . map (\(VLtl v) -> v)
+    let f = VLtl . Or . map g
+        g (VLtl v) = v
+        g _ = assert False undefined
     in evalCond evalF f xs x
   BaseBus x y          ->
     idValue y >>= \case
@@ -798,7 +816,7 @@ evalLtl s e = case expr e of
           VNumber y -> return $ VLtl $ if f x y then TTrue else FFalse
           _         -> assert False undefined
         _         -> assert False undefined
-    
+
     sNext = if s `elem` [SemanticsFiniteMealy, SemanticsFiniteMoore]
             then StrongNext
             else Next
@@ -841,18 +859,22 @@ evalNum s e = case expr e of
   NumSMin x     ->
     evalE x >>= \case
       VSet y ->
-        let xs = map (\(VNumber v) -> v) $ S.elems y in
-        if null xs
-        then errMinSet $ srcPos e
-        else return $ VNumber $ foldl min (head xs) xs
+        let xs = map g $ S.elems y
+            g (VNumber v) = v
+            g _ = assert False undefined
+         in if null xs
+            then errMinSet $ srcPos e
+            else return $ VNumber $ minimum xs
       _      -> assert False undefined
   NumSMax x     -> do
     evalE x >>= \case
       VSet y ->
-        let xs = map (\(VNumber v) -> v) $ S.elems y in
-        if null xs
-        then errMaxSet $ srcPos e
-        else return $ VNumber $ foldl max (head xs) xs
+        let xs = map g $ S.elems y
+            g (VNumber v) = v
+            g _ = assert False undefined
+         in if null xs
+            then errMaxSet $ srcPos e
+            else return $ VNumber $ maximum xs
       _      -> assert False undefined
   NumSSize x    ->
     evalE x >>= \case
@@ -863,10 +885,14 @@ evalNum s e = case expr e of
       VBus _ i _ -> return $ VNumber i
       _          -> assert False undefined
   NumRPlus xs x ->
-    let f = VNumber . sum . map (\(VNumber v) -> v)
+    let f = VNumber . sum . map g
+        g (VNumber v) = v
+        g _ = assert False undefined
     in evalCond evalN f xs x
   NumRMul xs x  ->
-    let f = VNumber . product . map (\(VNumber v) -> v)
+    let f = VNumber . product . map g
+        g (VNumber v) = v
+        g _ = assert False undefined
     in evalCond evalN f xs x
   BaseId _      ->
     evalE e >>= \case
@@ -1019,17 +1045,21 @@ evalSet s e = case expr e of
   SetCap x y     -> liftM2Set S.intersection x y
   SetMinus x y   -> liftM2Set S.difference x y
   SetRCup xs x   ->
-    let f = VSet . S.unions . map (\(VSet v) -> v)
+    let f = VSet . S.unions . map g
+        g (VSet v) = v
+        g _ = assert False undefined
     in evalCond evalS f xs x
   SetRCap xs x   ->
     if null xs then
       errSetCap $ srcPos e
     else
-      let
-        g vs = foldl S.intersection (head vs) vs
-        f = VSet . g . map (\(VSet v) -> v)
-      in
-        evalCond evalS f xs x
+      let f = VSet . g . map t
+          g vs = case vs of
+            [] -> S.empty
+            v:vr -> foldl S.intersection v vr
+          t (VSet v) = v
+          t _ = assert False undefined
+       in evalCond evalS f xs x
   BaseId _       ->
     evalExpr s e >>= \case
       VSet x -> return $ VSet x
@@ -1049,7 +1079,7 @@ evalSet s e = case expr e of
         _      -> assert False undefined
 
     evalCond = evalConditional s
-    
+
     evalS = evalSet s
 
 -----------------------------------------------------------------------------
@@ -1058,13 +1088,12 @@ evalConditional
   :: Semantics -> (Expr Int -> StateT ST (Either Error) a) -> ([a] -> a)
       -> [Expr Int] -> Expr Int -> StateT ST (Either Error) a
 
-evalConditional sem fun f xs x =
-  if null xs then
-    fun x
-  else do
+evalConditional sem fun f xs y = case xs of
+  []   -> fun y
+  x:xr -> do
     st <- get
     let
-      i = case expr $ head xs of
+      i = case expr x of
         BlnElem e _ -> case expr e of
           BaseId r -> r
           _ -> assert False undefined
@@ -1089,7 +1118,7 @@ evalConditional sem fun f xs x =
 
     evalSet sem s >>= \case
       VSet vs ->
-        mapM (bindExec i (tail xs) x) (S.toList vs)
+        mapM (bindExec i xr y) (S.toList vs)
         >>= (return . f)
       _       -> assert False undefined
 
@@ -1231,10 +1260,9 @@ fmlValue s args p i = do
     VSet a -> do
       put st
       let ys = filter (/= VEmpty) $ S.toList a
-      if null ys then
-        errNoMatch (idName $ tLookup st ! i) (map (prVal . fst) xs) p
-      else
-        return $ head ys
+      case ys of
+        []  -> errNoMatch (idName $ tLookup st ! i) (map (prVal . fst) xs) p
+        y:_ -> return y
     _      -> assert False undefined
 
 -----------------------------------------------------------------------------
@@ -1360,9 +1388,7 @@ overwriteParameter s (n,v) =
   Nothing -> cfgError $ "Specification has no parameter: " ++ n
   Just b  -> do
     let b' = b {
-          bVal = if null $ bVal b
-                 then []
-                 else [ Expr (BaseCon v) $ srcPos $ head $ bVal b ]
+          bVal = (Expr (BaseCon v) $ srcPos $ NonEmpty.head $ bVal b) :| []
           }
     return s {
       parameters = map (replace b') $ parameters s,
@@ -1379,7 +1405,7 @@ overwriteParameter s (n,v) =
                  idBindings =
                     if null $ bVal y
                     then Expr (SetExplicit []) $ bPos y
-                    else Expr (SetExplicit [head $ bVal y]) $ bPos y
+                    else Expr (SetExplicit [NonEmpty.head $ bVal y]) $ bPos y
                  }) t
 
 -----------------------------------------------------------------------------

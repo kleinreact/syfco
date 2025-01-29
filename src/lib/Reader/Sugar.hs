@@ -33,7 +33,12 @@ import Data.Expression
   )
 
 import Data.Either
-  ( partitionEithers
+  ( lefts
+  )
+
+import Data.List.NonEmpty
+  ( NonEmpty(..)
+  , toList
   )
 
 -----------------------------------------------------------------------------
@@ -55,23 +60,24 @@ replaceBinding
 
 replaceBinding b =
   case bVal b of
-    []  -> return b
-    [_] -> return b
-    xs  -> return b { bVal = replaceExpr xs }
+    _ :| [] -> return b
+    xs      -> return b { bVal = replaceExpr xs }
 
 -----------------------------------------------------------------------------
 
 replaceExpr
-  :: [Expr Int] -> [Expr Int]
+  :: NonEmpty (Expr Int) -> NonEmpty (Expr Int)
 
 replaceExpr xs =
   let
-    ys = if any ischeck xs then map addcheck xs else xs
-    (zs,os) = partitionEithers $ map isOtherwise ys
-    ncond p = Expr (BlnNot (orlist p $ map cond zs)) p
-    os' = map (replace ncond) os
+    ys = isOtherwise
+      <$> if any ischeck $ toList xs
+          then addcheck <$> xs
+          else xs
+
+    ncond p = Expr (BlnNot (orlist p $ map cond $ lefts $ toList ys)) p
   in
-    zs ++ os'
+    either id id . fmap (replace ncond) <$> ys
 
   where
     ischeck e = case expr e of

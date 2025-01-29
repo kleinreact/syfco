@@ -64,12 +64,15 @@ import Data.Maybe
   ( fromJust
   )
 
+import Control.Monad
+  ( when
+  )
+
 import Control.Monad.State
   ( StateT(..)
   , execStateT
   , put
   , get
-  , when
   )
 
 import qualified Data.IntMap.Strict as IM
@@ -283,12 +286,15 @@ checkCircularDeps s = do
   where
     isunary (x,_) = null $ imLookup x $ arguments s
 
-    check xs = when (length xs > 1) $
-      let
-        p = imLookup (head xs) $ positions s
-        ys = map (\i -> (imLookup i $ names s, imLookup i $ positions s)) xs
-      in
-        errCircularDep ys p
+    check xs = case xs of
+      x:_:_ ->
+        let
+          p = imLookup x $ positions s
+          ys = map (\i -> (imLookup i $ names s, imLookup i $ positions s)) xs
+        in
+          errCircularDep ys p
+      _:_   -> return ()
+      []    -> return ()
 
     checkSingelton (i,j) = when (i == j) $
       errCircularDep [(imLookup i $ names s, imLookup i $ positions s)] $

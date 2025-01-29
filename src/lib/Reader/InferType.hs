@@ -91,13 +91,16 @@ import Reader.Error
   , errInfinite
   )
 
+import Control.Monad
+  ( when
+  , unless
+  )
+
 import Control.Monad.State
   ( StateT(..)
   , execStateT
   , get
   , put
-  , when
-  , unless
   )
 
 import Control.Exception
@@ -466,7 +469,7 @@ typeCheck e = \case
     LtlRStrongGlobally x y -> typeChckR x y
     LtlFinally x           -> typeCheck x TLtl
     LtlRFinally x y        -> typeChckR x y
-    LtlRStrongFinally x y  -> typeChckR x y 
+    LtlRStrongFinally x y  -> typeChckR x y
     LtlHistorically x      -> typeCheck x TLtl
     LtlRHistorically x y   -> typeChckR x y
     LtlOnce x              -> typeCheck x TLtl

@@ -113,9 +113,10 @@ errNoMatch
 errNoMatch i xs pos =
   let msg = "there is no positive guard to evaluate:\n" ++
             "  " ++ i ++ "(" ++
-            (if null xs then "" else
-               head xs ++ concatMap ((:) ',' . (:) ' ') (tail xs)) ++
-            ")"
+            ( case xs of
+                []   -> ""
+                x:xr -> x ++ concatMap ((:) ',' . (:) ' ') xr
+            ) ++ ")"
   in StateT $ \_ -> runtimeError pos msg
 
 -----------------------------------------------------------------------------

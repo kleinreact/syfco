@@ -147,7 +147,7 @@ errCircularDep
 
 errCircularDep xs pos =
   let
-    m = foldl max (length $ fst $ head xs) $ map (length . fst) xs
+    m = maximum $ length . fst <$> xs
     msg = "detected circular dependencies between:" ++
           concatMap (\(x,y) -> "\n  " ++ x ++
                               replicate (m - length x) ' ' ++

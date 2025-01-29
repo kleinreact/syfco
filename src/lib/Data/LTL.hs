@@ -40,11 +40,15 @@ module Data.LTL
 
 -----------------------------------------------------------------------------
 
+import Data.Maybe
+  ( catMaybes
+  )
+
 import qualified Data.Set as S
-    ( toList
-    , insert
-    , empty
-    )
+  ( toList
+  , insert
+  , empty
+  )
 
 -----------------------------------------------------------------------------
 
@@ -233,10 +237,10 @@ fmlSignals = S.toList . signals' S.empty
 fmlInputs
   :: Formula -> [String]
 
-fmlInputs fml = map (\(Input x) -> x) $ filter isInput $ fmlSignals fml
+fmlInputs fml = catMaybes $ isInput <$> fmlSignals fml
   where
-    isInput (Input _)  = True
-    isInput (Output _) = False
+    isInput (Input x)  = Just x
+    isInput (Output _) = Nothing
 
 -----------------------------------------------------------------------------
 
@@ -245,10 +249,10 @@ fmlInputs fml = map (\(Input x) -> x) $ filter isInput $ fmlSignals fml
 fmlOutputs
   :: Formula -> [String]
 
-fmlOutputs fml = map (\(Output x) -> x) $ filter isOutput $ fmlSignals fml
+fmlOutputs fml = catMaybes $ isOutput <$> fmlSignals fml
   where
-    isOutput (Output _)  = True
-    isOutput (Input _) =False
+    isOutput (Output x) = Just x
+    isOutput (Input _)  = Nothing
 
 -----------------------------------------------------------------------------
 

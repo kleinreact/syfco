@@ -20,6 +20,10 @@ import Data.Expression
     , ExprPos
     )
 
+import Data.List.NonEmpty
+    ( NonEmpty(..)
+    )
+
 -----------------------------------------------------------------------------
 
 -- | We use the type @Binding@ as a shortcut for a binding of an expression
@@ -40,7 +44,7 @@ data BindExpr a =
   { bIdent :: a
   , bArgs :: [(a,ExprPos)]
   , bPos :: ExprPos
-  , bVal :: [Expr a]
+  , bVal :: NonEmpty (Expr a)
   } deriving (Show)
 
 -----------------------------------------------------------------------------

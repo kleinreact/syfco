@@ -92,20 +92,24 @@ writeFormat c s = do
     ++ "\n" ++ "  TITLE:       \"" ++ title s' ++ "\""
     ++ "\n" ++ "  DESCRIPTION: \"" ++ description s' ++ "\""
     ++ "\n" ++ "  SEMANTICS:   " ++
-      (case semantics s' of
-         SemanticsMealy       -> "Mealy"
-         SemanticsMoore       -> "Moore"
-         SemanticsStrictMealy -> "Strict,Mealy"
-         SemanticsStrictMoore -> "Strict,Moore"
-         SemanticsFiniteMealy -> "Finite,Mealy"
-         SemanticsFiniteMoore -> "Finite,Moore")
+       ( case semantics s' of
+           SemanticsMealy       -> "Mealy"
+           SemanticsMoore       -> "Moore"
+           SemanticsStrictMealy -> "Strict,Mealy"
+           SemanticsStrictMoore -> "Strict,Moore"
+           SemanticsFiniteMealy -> "Finite,Mealy"
+           SemanticsFiniteMoore -> "Finite,Moore"
+       )
     ++ "\n" ++ "  TARGET:      " ++
-      (case target s' of
-         TargetMealy -> "Mealy"
-         TargetMoore -> "Moore")
-    ++ (if null $ tags s' then ""
-        else "\n  TAGS:        " ++ head (tags s') ++
-             concatMap ((:) ' ' . (:) ',') (tail $ tags s'))
+       ( case target s' of
+           TargetMealy -> "Mealy"
+           TargetMoore -> "Moore"
+       )
+    ++ ( case tags s' of
+           []   -> ""
+           x:xr -> "\n  TAGS:        " ++ x
+                ++ concatMap ((:) ' ' . (:) ',') xr
+       )
     ++ "\n" ++ "}"
     ++ "\n"
     ++ "\n" ++ "MAIN {"

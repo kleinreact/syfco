@@ -307,10 +307,12 @@ prExpr e = case expr e of
   BaseCon x              -> "(CON " ++ show x ++ ")"
   BaseId x               -> "(ID " ++ show x ++ ")"
   BaseBus x y            -> "(BUS " ++ show y ++ "[" ++ prExpr x ++ "])"
-  BaseFml xs y           -> "(FUN " ++ show y ++ "(" ++
-                           (if null xs then ""
-                            else prExpr (head xs) ++
-                                 concatMap ((:) ',' . prExpr) (tail xs)) ++ ")"
+  BaseFml xs y           -> "(FUN " ++ show y ++ "("
+                         ++ ( case xs of
+                                []   -> ""
+                                x:xr -> prExpr x
+                                     ++ concatMap ((:) ',' . prExpr) xr
+                            ) ++ ")"
   NumSMin x              -> "(MIN " ++ prExpr x ++ ")"
   NumSMax x              -> "(MAX " ++ prExpr x ++ ")"
   NumSSize x             -> "(SIZE " ++ prExpr x ++ ")"
@@ -385,10 +387,12 @@ prPrettyExpr e = case expr e of
   BaseCon x              -> "(CON " ++ show x ++ ")"
   BaseId x               -> "(ID " ++ show x ++ ")"
   BaseBus x y            -> "(BUS " ++ show y ++ "[" ++ prExpr x ++ "])"
-  BaseFml xs y           -> "(FUN " ++ show y ++ "(" ++
-                            (if null xs then ""
-                             else prExpr (head xs) ++
-                                  concatMap ((:) ',' . prExpr) (tail xs)) ++ ")"
+  BaseFml xs y           -> "(FUN " ++ show y ++ "("
+                         ++ ( case xs of
+                                []   -> ""
+                                x:xr -> prExpr x
+                                     ++ concatMap ((:) ',' . prExpr) xr
+                            ) ++ ")"
   NumSMin x              -> "(MIN " ++ prExpr x ++ ")"
   NumSMax x              -> "(MAX " ++ prExpr x ++ ")"
   NumSSize x             -> "(SIZE " ++ prExpr x ++ ")"

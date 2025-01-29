@@ -8,6 +8,10 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE LambdaCase #-}
+
+-----------------------------------------------------------------------------
+
 module Data.StringMap
     ( StringMap
     , empty
@@ -68,28 +72,27 @@ lookup str mapping = case mapping of
 insert
   :: String -> Int -> StringMap -> StringMap
 
-insert s i m = case m of
-  Empty      -> Leaf (s,i)
-  Leaf (e,v) -> if e == s then Leaf (s,i) else case e of
-    []     -> Node (Just v, [(head s, Leaf (tail s,i))])
-    (x:xr) -> case s of
-      []     -> Node (Just i, [(x,Leaf (xr,v))])
-      (y:yr) ->
-        if x == y then
-          Node (Nothing, [(x, insert yr i (Leaf (xr,v)))])
-        else
-          Node (Nothing, [(x, Leaf (xr,v)),(y, Leaf (yr,i))])
+insert s i = \case
+  Empty       -> Leaf (s, i)
+  Leaf (e, v) -> case e of
+    [] -> case s of
+      []   -> Leaf (s, i)
+      y:yr -> Node (Just v, [(y, Leaf (yr, i))])
+    x:xr
+      | e == s    -> Leaf (s, i)
+      | otherwise -> case s of
+          []               -> Node (Just i, [(x, Leaf (xr, v))])
+          y:yr | x == y    -> Node (Nothing, [(x, insert yr i (Leaf (xr,v)))])
+               | otherwise -> Node (Nothing, [(x, Leaf (xr,v)),(y, Leaf (yr,i))])
   Node (v,xs) -> case s of
     []     -> Node (Just i,xs)
     (x:xr) -> Node (v, add x xr i xs)
 
   where
-    add x xr j xs = case xs of
-      []         -> [(x, Leaf (xr,j))]
-      ((c,n):yr) ->
-        if x == c then
-          (c,insert xr j n):yr
-        else
-          (c,n) : add x xr j yr
+    add x xr j = \case
+      []            -> [(x, Leaf (xr,j))]
+      ((c, n) : yr)
+        | x == c    -> (c, insert xr j n) : yr
+        | otherwise -> (c, n) : add x xr j yr
 
 -----------------------------------------------------------------------------

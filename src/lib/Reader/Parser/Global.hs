@@ -18,6 +18,10 @@ import Data.List
   ( find
   )
 
+import Data.List.NonEmpty
+  ( NonEmpty(..)
+  )
+
 import Data.Enum
   ( EnumDefinition(..)
   )
@@ -237,8 +241,9 @@ globalParser = do
 
     reminderParser x args pos = do
       rOp "="
-      es <- many1 exprParser
-      return $ Just $ BindExpr x args pos es
+      e <- exprParser
+      er <-many exprParser
+      return $ Just $ BindExpr x args pos (e :| er)
 
     argumentsEnumParser x pos = do
       ch '('; (~~)
@@ -248,8 +253,9 @@ globalParser = do
 
     reminderEnumParser x args pos = do
       rOp "="
-      es <- many1 exprParser
-      return $ Just $ Left $ BindExpr x args pos es
+      e <- exprParser
+      er <-many exprParser
+      return $ Just $ Left $ BindExpr x args pos (e :| er)
 
     ch = void . char
     br = braces tokenparser

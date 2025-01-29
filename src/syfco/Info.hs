@@ -135,8 +135,8 @@ prTags
   :: Specification -> IO ()
 
 prTags s = case tags s of
-  [] -> return ()
-  xs -> putStrLn $ head xs ++ concatMap ((:) ' ' . (:) ',') (tail xs)
+  []   -> return ()
+  x:xr -> putStrLn $ x ++ concatMap ((:) ' ' . (:) ',') xr
 
 -----------------------------------------------------------------------------
 
